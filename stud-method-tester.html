@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stud method tester</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ECEEEC; --panel:#F6F7F5; --ink:#1F2327; --muted:#5A636B; --line:#C6CCCF;
+  --tape:#F3C21A; --tape-ink:#16181A; --hollow:#2F5E8C; --danger:#CF3328; --good:#17753A; --warn:#8F4F00;
+  --chalk:#1D5FD0; --wall:#D9DCD7;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15181B; --panel:#1E2226; --ink:#E6E9EB; --muted:#9BA4AC; --line:#323A40;
+    --tape:#EDBB17; --hollow:#5E93C8; --danger:#FF6B5F; --good:#5BD38A; --warn:#F0B35A; --chalk:#6EA0FF; --wall:#3A4046;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15181B; --panel:#1E2226; --ink:#E6E9EB; --muted:#9BA4AC; --line:#323A40;
+  --tape:#EDBB17; --hollow:#5E93C8; --danger:#FF6B5F; --good:#5BD38A; --warn:#F0B35A; --chalk:#6EA0FF; --wall:#3A4046;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; font-size:16px; line-height:1.5; -webkit-text-size-adjust:100%}
+main{max-width:600px; margin:0 auto; padding:18px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+h1{font-size:clamp(28px,8.5vw,40px); font-weight:800; font-stretch:125%; line-height:1; margin:0 0 6px; letter-spacing:-.01em}
+h2{font-size:22px; font-weight:750; font-stretch:110%; line-height:1.15; margin:0 0 8px}
+h3{font-size:16px; font-weight:700; margin:16px 0 8px}
+p{margin:0 0 10px}
+.lede{color:var(--muted); margin-bottom:14px}
+.hidden{display:none !important}
+.small{font-size:14px}
+.muted{color:var(--muted)}
+button{font:inherit; color:inherit; cursor:pointer}
+button:focus-visible{outline:3px solid var(--chalk); outline-offset:2px}
+button:disabled{opacity:.45; cursor:not-allowed}
+
+details.panel{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:2px 16px 8px}
+details.panel summary{cursor:pointer; font-weight:750; font-size:18px; padding:10px 0}
+details.panel ol{padding-left:22px; margin:0 0 6px}
+details.panel li{margin-bottom:6px}
+
+.mgrid{display:grid; grid-template-columns:auto 1fr 1fr 1fr; gap:6px; align-items:center}
+.rowlabel{font-weight:650; font-size:14px; padding-right:4px}
+.chip{border:1.5px solid var(--line); border-radius:8px; padding:9px 2px; background:transparent; font-weight:600; font-size:13px; min-height:42px}
+.chip[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.fields{display:grid; gap:12px; margin-top:14px}
+.flabel{display:block; font-weight:650; font-size:14px; margin-bottom:5px}
+.seg{display:flex; border:1.5px solid var(--ink); border-radius:9px; overflow:hidden}
+.seg label{flex:1; position:relative}
+.seg label + label{border-left:1.5px solid var(--ink)}
+.seg input{position:absolute; inset:0; opacity:0; margin:0; width:100%; height:100%; cursor:pointer}
+.seg span{display:block; text-align:center; padding:8px 4px; font-weight:600; font-size:14px}
+.seg input:checked + span{background:var(--ink); color:var(--bg)}
+.seg input:focus-visible + span{outline:3px solid var(--chalk); outline-offset:-4px}
+.seg input:disabled + span{opacity:.45}
+
+.primary{display:block; width:100%; min-height:58px; margin-top:14px; border:0; border-radius:12px; background:var(--ink); color:var(--bg); font-size:19px; font-weight:750; font-stretch:110%}
+.primary.stop{background:var(--danger); color:#fff}
+.secondary{background:transparent; border:1.5px solid var(--line); border-radius:9px; padding:10px 12px; font-weight:600; font-size:14px}
+.secondary.armed{border-color:var(--danger); color:var(--danger)}
+.row{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+.diag{font-size:13px; color:var(--muted); margin-top:8px}
+.error{color:var(--danger); font-weight:600}
+.warn{color:var(--warn)}
+
+.run{margin-top:22px; border-top:1px solid var(--line); padding-top:18px}
+.meta{font-size:14px; color:var(--muted); font-weight:600; margin-bottom:2px}
+.pose{display:grid; grid-template-columns:150px 1fr; gap:12px; align-items:center; margin:10px 0 12px}
+.pose svg{width:150px; height:auto; display:block}
+.pose p{margin:0; font-size:15px}
+.target{display:flex; align-items:center; justify-content:space-between; gap:10px; border-radius:14px; padding:14px 16px; font-size:clamp(26px,8vw,34px); font-weight:800; font-stretch:115%; line-height:1}
+.target.S{background:var(--tape); color:var(--tape-ink)}
+.target.H{background:var(--hollow); color:#fff}
+.target small{font-size:15px; font-weight:650; font-stretch:100%; opacity:.85}
+.dots{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px}
+.dot{width:18px; height:18px; border-radius:50%; border:2px solid var(--line)}
+.dot.S.done{background:var(--tape); border-color:var(--tape)}
+.dot.H.done{background:var(--hollow); border-color:var(--hollow)}
+.dot.next{border-color:var(--ink)}
+.status{font-size:18px; font-weight:650; min-height:2.8em; margin:12px 0 0; line-height:1.3}
+
+.results{margin-top:26px; border-top:1px solid var(--line); padding-top:18px}
+.winner{font-size:17px; font-weight:650; line-height:1.35}
+.brow{padding:12px 0; border-bottom:1px solid var(--line)}
+.brow.best .bname::after{content:"Best so far"; margin-left:8px; font-size:12px; font-weight:750; background:var(--tape); color:var(--tape-ink); padding:2px 7px; border-radius:6px; vertical-align:2px}
+.btop{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.bname{font-weight:700}
+.bstat{font-variant-numeric:tabular-nums; white-space:nowrap}
+.bstat b{font-size:18px}
+.bar{position:relative; height:10px; background:var(--panel); border:1px solid var(--line); border-radius:6px; margin-top:6px; overflow:hidden}
+.bar span{position:absolute; left:0; top:0; bottom:0; background:var(--muted)}
+.bar.strong span{background:var(--good)}
+.bar.fair span{background:var(--tape)}
+.bar.weak span{background:var(--danger)}
+.bar i{position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; background:var(--ink); opacity:.5}
+.bsub{font-size:13px; color:var(--muted); margin-top:4px}
+.tag{font-size:12px; font-weight:750; padding:2px 7px; border-radius:6px; margin-left:6px}
+.tag.strong{background:var(--good); color:#fff}
+.tag.fair{background:var(--tape); color:var(--tape-ink)}
+.tag.weak{background:var(--danger); color:#fff}
+.help{font-size:13px; color:var(--muted); margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Stud method tester</h1>
+    <p class="lede">Compares ways of holding and buzzing the phone, and scores which one tells a stud from a hollow spot most reliably.</p>
+  </header>
+
+  <details class="panel" id="setupBox" open>
+    <summary>Setup</summary>
+    <ol>
+      <li>Find one spot you're sure is over a stud (nail heads, the side of an outlet box, or a regular stud finder) and one hollow spot 6 to 8 inches away. Mark them S and H with tape.</li>
+      <li>Turn media volume and vibration intensity all the way up in the phone's settings, and keep the room quiet.</li>
+      <li>Lift the phone off the wall and set it back for every reading. That's what shows whether a method is consistent.</li>
+      <li>Test with the kind of case your customers are likely to have.</li>
+    </ol>
+    <h3>Methods to compare</h3>
+    <div class="mgrid" id="mgrid"></div>
+    <div class="fields">
+      <div>
+        <span class="flabel" id="l-reps">Readings per spot</span>
+        <div class="seg" role="radiogroup" aria-labelledby="l-reps">
+          <label><input type="radio" name="reps" value="3"><span>3</span></label>
+          <label><input type="radio" name="reps" value="4"><span>4</span></label>
+          <label><input type="radio" name="reps" value="5"><span>5</span></label>
+        </div>
+      </div>
+      <div>
+        <span class="flabel" id="l-hf">Measuring</span>
+        <div class="seg" role="radiogroup" aria-labelledby="l-hf">
+          <label><input type="radio" name="handsFree" value="off"><span>Tap Measure</span></label>
+          <label><input type="radio" name="handsFree" value="on"><span>Hands-free</span></label>
+        </div>
+      </div>
+      <div id="hfFields">
+        <span class="flabel" id="l-move">Time to move between spots</span>
+        <div class="seg" role="radiogroup" aria-labelledby="l-move">
+          <label><input type="radio" name="moveSec" value="2"><span>2 s</span></label>
+          <label><input type="radio" name="moveSec" value="3"><span>3 s</span></label>
+          <label><input type="radio" name="moveSec" value="4"><span>4 s</span></label>
+        </div>
+        <span class="flabel" id="l-voice" style="margin-top:10px">Cues</span>
+        <div class="seg" role="radiogroup" aria-labelledby="l-voice">
+          <label><input type="radio" name="voice" value="on"><span>Spoken</span></label>
+          <label><input type="radio" name="voice" value="off"><span>Beeps</span></label>
+        </div>
+        <p class="help">Spoken cues say "stud" or "hollow" before each reading. With beeps, two high beeps mean stud and one low beep means hollow.</p>
+      </div>
+    </div>
+  </details>
+
+  <button class="primary" id="micBtn" type="button">Turn on microphone</button>
+  <p class="diag" id="diag"></p>
+
+  <section class="run hidden" id="run" aria-labelledby="methodName">
+    <p class="meta" id="meta"></p>
+    <h2 id="methodName"></h2>
+    <div class="pose"><div id="poseSvg"></div><p id="poseText"></p></div>
+    <div class="target S" id="target"><span id="targetText">Stud spot</span><small id="targetSub"></small></div>
+    <div class="dots" id="dots" aria-hidden="true"></div>
+    <p class="status" id="status" aria-live="polite"></p>
+    <button class="primary" id="actBtn" type="button">Measure</button>
+    <div class="row">
+      <button class="secondary" id="redoBtn" type="button">Redo last</button>
+      <button class="secondary" id="skipBtn" type="button">Skip method</button>
+      <button class="secondary" id="wallBtn" type="button">Next wall</button>
+    </div>
+  </section>
+
+  <section class="results" aria-labelledby="resH">
+    <h2 id="resH">Results</h2>
+    <p class="winner" id="winner"></p>
+    <div id="board"></div>
+    <p class="help">Each method is scored by how often it would label a reading correctly using only the other readings from that wall. Guessing gets about half right, marked by the line on each bar. One lucky wall can fool you, so confirm the winner on at least two more walls.</p>
+    <div class="row">
+      <button class="secondary" id="exportBtn" type="button">Download CSV</button>
+      <button class="secondary" id="clearBtn" type="button">Clear all</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s){ return document.querySelector(s); };
+var STORE = 'methodtest:v1';
+var CONTACTS = [['back', 'Back flat'], ['bottom', 'Bottom end'], ['top', 'Top end']];
+var EXCITES = [['vibrate', 'Vibration'], ['speaker', 'Speaker'], ['tap', 'Tap']];
+var ORDER = []; CONTACTS.forEach(function(c){ EXCITES.forEach(function(e){ ORDER.push(c[0] + '|' + e[0]); }); });
+var BANDS = [100, 200, 400, 800, 1600, 3200, 6400];
+
+var S = {
+  settings: { methods: ['bottom|vibrate', 'bottom|speaker', 'bottom|tap', 'back|vibrate'], reps: 4, handsFree: 'off', moveSec: 3, voice: 'on' },
+  wall: 1, readings: [], skipped: {}
+};
+function load(){
+  try {
+    var d = JSON.parse(localStorage.getItem(STORE) || 'null'); if (!d) return;
+    if (d.settings) {
+      var st = d.settings;
+      if (Array.isArray(st.methods)) S.settings.methods = st.methods.filter(function(m){ return ORDER.indexOf(m) >= 0; });
+      if ([3, 4, 5].indexOf(st.reps) >= 0) S.settings.reps = st.reps;
+      if (st.handsFree === 'on' || st.handsFree === 'off') S.settings.handsFree = st.handsFree;
+      if ([2, 3, 4].indexOf(st.moveSec) >= 0) S.settings.moveSec = st.moveSec;
+      if (st.voice === 'on' || st.voice === 'off') S.settings.voice = st.voice;
+    }
+    if (typeof d.wall === 'number' && d.wall >= 1) S.wall = d.wall;
+    if (Array.isArray(d.readings)) S.readings = d.readings.filter(function(r){ return r && ORDER.indexOf(r.method) >= 0 && (r.label === 'S' || r.label === 'H') && Array.isArray(r.shape) && r.shape.length === BANDS.length - 1; });
+    if (d.skipped && typeof d.skipped === 'object') S.skipped = d.skipped;
+  } catch (e) {}
+}
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
+
+var ctx = null, stream = null, proc = null, ring = null, total = 0, noiseBuf = null, micOn = false;
+var busy = false, running = false, tapState = null, bgRms = 0.002, motion = [], motionSeen = false, clearTimer = null;
+
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+function mean(a){ var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return a.length ? s / a.length : 0; }
+function median(a){ if (!a.length) return 0; var b = a.slice().sort(function(x, y){ return x - y; }), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
+function contactOf(m){ return m.split('|')[0]; }
+function exciteOf(m){ return m.split('|')[1]; }
+function nameOf(m){
+  var c = CONTACTS.filter(function(x){ return x[0] === contactOf(m); })[0][1];
+  var e = EXCITES.filter(function(x){ return x[0] === exciteOf(m); })[0][1];
+  return c + ' + ' + e;
+}
+function selected(){ return ORDER.filter(function(m){ return S.settings.methods.indexOf(m) >= 0; }); }
+
+/* ---------- audio ---------- */
+async function enableMic(){
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AC) { diag('<span class="error">This browser can’t record audio. Use Chrome on Android.</span>'); return; }
+  try {
+    ctx = ctx || new AC();
+    try { await ctx.resume(); } catch (e) {}
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) {} }
+    var src = ctx.createMediaStreamSource(stream);
+    proc = ctx.createScriptProcessor(2048, 1, 1);
+    ring = new Float32Array(Math.round(ctx.sampleRate * 3));
+    proc.onaudioprocess = onAudio;
+    var mute = ctx.createGain(); mute.gain.value = 0;
+    src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+    noiseBuf = makeNoise();
+    micOn = true;
+    window.addEventListener('devicemotion', onMotion);
+    var tr = stream.getAudioTracks()[0];
+    if (tr) tr.addEventListener('ended', function(){ micOn = false; running = false; render(); });
+    $('#setupBox').open = false;
+  } catch (err) {
+    diag('<span class="error">The microphone didn’t turn on (' + (err && err.name ? err.name : 'error') + '). Allow microphone access for this site and reload.</span>');
+  }
+  render();
+}
+function onAudio(e){
+  var d = e.inputBuffer.getChannelData(0), L = ring.length, start = total;
+  for (var i = 0; i < d.length; i++) ring[(start + i) % L] = d[i];
+  total += d.length;
+  for (var o = 0; o + 256 <= d.length; o += 256) {
+    var s = 0; for (var k = o; k < o + 256; k++) s += d[k] * d[k];
+    var r = Math.sqrt(s / 256);
+    if (tapState && tapState.onset == null && performance.now() > tapState.armAt && r > Math.max(bgRms * 12, 0.02)) {
+      tapState.onset = start + o;
+      tapState.onsetT = performance.now() - (d.length - o) / ctx.sampleRate * 1000;
+    } else if (!tapState || tapState.onset == null) {
+      bgRms = bgRms * 0.97 + r * 0.03;
+    }
+  }
+}
+function readRing(startAbs, len){
+  var out = new Float32Array(Math.max(0, len)), L = ring.length;
+  for (var i = 0; i < out.length; i++) { var a = startAbs + i; out[i] = (a < 0 || a >= total || total - a > L) ? 0 : ring[a % L]; }
+  return out;
+}
+function makeNoise(){
+  var len = Math.floor(ctx.sampleRate * 1.0), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  var seed = 20260925; function rnd(){ seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 * 2 - 1; }
+  var b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, ss = 0;
+  for (var i = 0; i < len; i++) {
+    var w = rnd();
+    b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.96900 * b2 + w * 0.1538520;
+    b3 = 0.86650 * b3 + w * 0.3104856; b4 = 0.55000 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.0168980;
+    var p = b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362; b6 = w * 0.115926; d[i] = p; ss += p * p;
+  }
+  var sc = 0.38 / Math.sqrt(ss / len), f = Math.floor(ctx.sampleRate * 0.02);
+  for (i = 0; i < len; i++) { var g = i < f ? i / f : (i > len - f ? (len - i) / f : 1); d[i] = Math.tanh(d[i] * sc) * g; }
+  return buf;
+}
+function playNoise(){
+  var s = ctx.createBufferSource(); s.buffer = noiseBuf;
+  var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 90;
+  s.connect(hp); hp.connect(ctx.destination); s.start();
+}
+function tone(freq, when, dur, vol){
+  if (!ctx) return;
+  var t = ctx.currentTime + 0.01 + when, o = ctx.createOscillator(), g = ctx.createGain();
+  o.frequency.value = freq; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol || 0.25, t + 0.01); g.gain.linearRampToValueAtTime(0, t + dur);
+  o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function say(text){
+  return new Promise(function(resolve){
+    if (!('speechSynthesis' in window)) { resolve(false); return; }
+    try {
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text); u.rate = 1.05;
+      var done = false, fin = function(){ if (!done) { done = true; resolve(true); } };
+      u.onend = fin; u.onerror = fin; setTimeout(fin, 2500);
+      speechSynthesis.speak(u);
+    } catch (e) { resolve(false); }
+  });
+}
+async function cue(step){
+  var tap = exciteOf(step.method) === 'tap';
+  if (S.settings.voice === 'on' && 'speechSynthesis' in window) {
+    await say((tap ? 'Tap ' : '') + (step.label === 'S' ? 'stud' : 'hollow'));
+  } else {
+    if (step.label === 'S') { tone(1320, 0, 0.09); tone(1320, 0.16, 0.09); } else tone(660, 0, 0.18);
+    await sleep(450);
+  }
+}
+function onMotion(e){
+  var a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
+  motionSeen = true;
+  var now = performance.now();
+  motion.push({ t: now, m: Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z) });
+  while (motion.length && now - motion[0].t > 4000) motion.shift();
+}
+function motionIn(t0, t1){ return motion.filter(function(p){ return p.t >= t0 && p.t <= t1; }).map(function(p){ return p.m; }); }
+
+/* ---------- signal features ---------- */
+function fft(re, im){
+  var n = re.length, i, j, bit, len, k, t;
+  for (i = 1, j = 0; i < n; i++) {
+    for (bit = n >> 1; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  for (len = 2; len <= n; len <<= 1) {
+    var ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang), half = len >> 1;
+    for (i = 0; i < n; i += len) {
+      var cr = 1, ci = 0;
+      for (k = 0; k < half; k++) {
+        var a = i + k, b = a + half;
+        var vr = re[b] * cr - im[b] * ci, vi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - vr; im[b] = im[a] - vi; re[a] += vr; im[a] += vi;
+        var nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr;
+      }
+    }
+  }
+}
+function psd(x, N){
+  var P = new Float64Array(N / 2), segs = 0, re = new Float64Array(N), im = new Float64Array(N), i;
+  function seg(off, len){
+    re.fill(0); im.fill(0);
+    for (i = 0; i < len; i++) { var w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (len - 1)); re[i] = x[off + i] * w; }
+    fft(re, im);
+    for (i = 0; i < N / 2; i++) P[i] += re[i] * re[i] + im[i] * im[i];
+    segs++;
+  }
+  if (x.length < N) seg(0, x.length);
+  else for (var s = 0; s + N <= x.length; s += N / 2) seg(s, N);
+  for (i = 0; i < P.length; i++) P[i] /= Math.max(1, segs);
+  return P;
+}
+function spectral(x, N){
+  var P = psd(x, N), binHz = ctx.sampleRate / N, bands = [], tot = 0;
+  for (var b = 0; b < BANDS.length - 1; b++) {
+    var i0 = Math.max(1, Math.floor(BANDS[b] / binHz)), i1 = Math.min(P.length, Math.ceil(BANDS[b + 1] / binHz)), s = 0;
+    for (var i = i0; i < i1; i++) s += P[i];
+    tot += s; bands.push(10 * Math.log10(s + 1e-20));
+  }
+  var m = mean(bands);
+  return { level: round2(10 * Math.log10(tot + 1e-20)), shape: bands.map(function(v){ return round2(v - m); }) };
+}
+function round2(v){ return Math.round(v * 100) / 100; }
+
+/* ---------- measuring ---------- */
+function nextStep(){
+  var meths = selected(), reps = S.settings.reps;
+  for (var i = 0; i < meths.length; i++) {
+    var m = meths[i]; if (S.skipped[S.wall + '|' + m]) continue;
+    var r = S.readings.filter(function(x){ return x.wall === S.wall && x.method === m; });
+    var ns = r.filter(function(x){ return x.label === 'S'; }).length, nh = r.length - ns;
+    if (ns < reps || nh < reps) return { method: m, index: i, count: meths.length, label: (ns <= nh && ns < reps) ? 'S' : 'H', ns: ns, nh: nh };
+  }
+  return null;
+}
+function addReading(step, f, accel, decay){
+  S.readings.push({ wall: S.wall, method: step.method, label: step.label, level: f.level, shape: f.shape, accel: accel, decay: decay, t: Date.now() });
+  save();
+}
+async function measureSteady(step){
+  if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) {} }
+  if (exciteOf(step.method) === 'vibrate') {
+    var ok = false;
+    try { ok = navigator.vibrate ? navigator.vibrate(1000) : false; } catch (e) { ok = false; }
+    if (!ok) { setStatus('Vibration isn’t available in this browser, so this method can’t be tested here.', true); return false; }
+  } else playNoise();
+  await sleep(300);
+  var a0 = total, t0 = performance.now();
+  await sleep(550);
+  var a1 = total, t1 = performance.now();
+  await sleep(250);
+  var x = readRing(a0, a1 - a0);
+  var f = spectral(x, 4096);
+  var mv = motionIn(t0, t1), accel = null;
+  if (mv.length >= 4) { var mm = mean(mv), sd = Math.sqrt(mean(mv.map(function(v){ return (v - mm) * (v - mm); }))); accel = round2(20 * Math.log10(sd + 1e-3)); }
+  if (f.level < -95) { setStatus('The microphone heard almost nothing. Check the volume and try again.', true); return false; }
+  addReading(step, f, accel, null);
+  tone(990, 0, 0.05, 0.15);
+  return true;
+}
+async function measureTap(step){
+  if (ctx.state !== 'running') { try { await ctx.resume(); } catch (e) {} }
+  tapState = { armAt: performance.now() + 150, onset: null, onsetT: null };
+  var sr = ctx.sampleRate, deadline = performance.now() + 6000;
+  while (performance.now() < deadline && (running || busy)) {
+    if (tapState.onset != null && total >= tapState.onset + Math.round(0.33 * sr)) break;
+    await sleep(30);
+  }
+  var st = tapState; tapState = null;
+  if (!st || st.onset == null) { setStatus('No tap heard. Try again, a little firmer.', true); return false; }
+  if (total < st.onset + Math.round(0.33 * sr)) await sleep(350);
+  var x = readRing(st.onset - Math.round(0.002 * sr), Math.round(0.12 * sr));
+  var f = spectral(x, 8192);
+  var fr = Math.round(0.002 * sr), env = [], seg = readRing(st.onset - Math.round(0.01 * sr), Math.round(0.31 * sr));
+  for (var o = 0; o + fr <= seg.length; o += fr) { var s = 0; for (var k = o; k < o + fr; k++) s += seg[k] * seg[k]; env.push(Math.sqrt(s / fr)); }
+  var pk = 0; for (var i = 1; i < env.length; i++) if (env[i] > env[pk]) pk = i;
+  var dIdx = env.length - 1; for (i = pk; i < env.length; i++) if (env[i] < env[pk] * 0.1) { dIdx = i; break; }
+  var decay = (dIdx - pk) * 2;
+  var accel = null;
+  if (st.onsetT) {
+    var base = motionIn(st.onsetT - 400, st.onsetT - 60), win = motionIn(st.onsetT - 50, st.onsetT + 200);
+    if (base.length >= 2 && win.length >= 2) { var bm = median(base), peak = 0; win.forEach(function(v){ peak = Math.max(peak, Math.abs(v - bm)); }); accel = round2(20 * Math.log10(peak + 1e-3)); }
+  }
+  addReading(step, f, accel, decay);
+  tone(990, 0, 0.05, 0.15);
+  return true;
+}
+async function measure(step){
+  return exciteOf(step.method) === 'tap' ? measureTap(step) : measureSteady(step);
+}
+function spot(label){ return label === 'S' ? 'stud' : 'hollow'; }
+async function manualMeasure(){
+  if (busy || running || !micOn) return;
+  var step = nextStep(); if (!step) return;
+  busy = true; render();
+  try {
+    if (exciteOf(step.method) === 'tap') setStatus('Tap the phone on the ' + spot(step.label) + ' spot now.');
+    else { setStatus('Hold still on the ' + spot(step.label) + ' spot…'); await sleep(1200); setStatus('Measuring. Hold still.'); }
+    var ok = await measure(step);
+    busy = false;
+    if (ok) afterReading(step);
+  } finally { busy = false; render(); }
+}
+function afterReading(step){
+  var n = nextStep();
+  if (!n) setStatus('Every method is done on wall ' + S.wall + '. Check the results, then tap Next wall to repeat somewhere else.');
+  else if (n.method !== step.method) setStatus('That method is done. Next up: ' + nameOf(n.method) + '. Change your grip to match the picture.');
+  else setStatus('Saved. Lift the phone and move to the ' + spot(n.label) + ' spot.');
+}
+async function handsFree(){
+  if (running) { running = false; setStatus('Stopping…'); render(); return; }
+  if (busy || !micOn) return;
+  var first = nextStep(); if (!first) return;
+  running = true; busy = true; render();
+  var method = first.method, stopped = false;
+  try {
+    if (S.settings.voice === 'on') await say(nameOf(method).replace('+', 'with'));
+    while (running) {
+      var step = nextStep(); if (!step || step.method !== method) break;
+      render(); await cue(step);
+      if (!running) break;
+      var ok;
+      if (exciteOf(method) === 'tap') {
+        setStatus('Tap the phone on the ' + spot(step.label) + ' spot now.');
+        ok = await measureTap(step);
+      } else {
+        for (var c = S.settings.moveSec; c > 0 && running; c--) { setStatus('Move to the ' + spot(step.label) + ' spot and hold still (' + c + ')'); await sleep(1000); }
+        if (!running) break;
+        setStatus('Measuring. Hold still.');
+        ok = await measureSteady(step);
+      }
+      if (!ok) { stopped = true; break; }
+      render();
+    }
+    if (running && !stopped) {
+      var n = nextStep();
+      if (S.settings.voice === 'on') await say('Method done');
+      setStatus(n ? 'Method done. Change your grip for ' + nameOf(n.method) + ', then tap Start hands-free.' : 'Every method is done on wall ' + S.wall + '. Check the results, then tap Next wall.');
+    }
+  } finally { running = false; busy = false; render(); }
+}
+
+/* ---------- scoring ---------- */
+function scoreGroup(R){
+  var hasAcc = R.every(function(r){ return r.accel != null; }), hasDec = R.every(function(r){ return r.decay != null; });
+  var X = R.map(function(r){ var v = r.shape.slice(); v.push(r.level); if (hasAcc) v.push(r.accel); if (hasDec) v.push(r.decay); return v; });
+  var d = X[0].length, mu = [], sd = [], j;
+  for (j = 0; j < d; j++) { var col = X.map(function(v){ return v[j]; }), m = mean(col); mu.push(m); sd.push(Math.max(1e-3, Math.sqrt(mean(col.map(function(v){ return (v - m) * (v - m); }))))); }
+  var Z = X.map(function(v){ return v.map(function(x, k){ return (x - mu[k]) / sd[k]; }); });
+  var lab = R.map(function(r){ return r.label; });
+  function centroid(idx){ var c = new Array(d).fill(0); idx.forEach(function(i){ for (var k = 0; k < d; k++) c[k] += Z[i][k]; }); return c.map(function(v){ return v / idx.length; }); }
+  function dist(a, b){ var s = 0; for (var k = 0; k < d; k++) s += (a[k] - b[k]) * (a[k] - b[k]); return Math.sqrt(s); }
+  var correct = 0, total = 0;
+  for (var i = 0; i < Z.length; i++) {
+    var sI = [], hI = [];
+    for (var q = 0; q < Z.length; q++) if (q !== i) (lab[q] === 'S' ? sI : hI).push(q);
+    if (!sI.length || !hI.length) continue;
+    var pred = dist(Z[i], centroid(sI)) <= dist(Z[i], centroid(hI)) ? 'S' : 'H';
+    if (pred === lab[i]) correct++;
+    total++;
+  }
+  var all = Z.map(function(_, i){ return i; });
+  var sAll = all.filter(function(i){ return lab[i] === 'S'; }), hAll = all.filter(function(i){ return lab[i] === 'H'; });
+  var cS = centroid(sAll), cH = centroid(hAll);
+  var within = Math.sqrt(mean(all.map(function(i){ var c = lab[i] === 'S' ? cS : cH; var e = dist(Z[i], c); return e * e; })));
+  return { correct: correct, total: total, sep: within > 0 ? dist(cS, cH) / within : 0 };
+}
+function scoreMethod(m){
+  var walls = {}, correct = 0, total = 0, seps = [], n = 0;
+  S.readings.forEach(function(r){ if (r.method === m) { (walls[r.wall] = walls[r.wall] || []).push(r); n++; } });
+  Object.keys(walls).forEach(function(w){
+    var R = walls[w], ns = R.filter(function(r){ return r.label === 'S'; }).length, nh = R.length - ns;
+    if (ns >= 2 && nh >= 2) { var g = scoreGroup(R); correct += g.correct; total += g.total; seps.push(g.sep); }
+  });
+  return { method: m, n: n, correct: correct, total: total, acc: total ? correct / total : null, sep: seps.length ? mean(seps) : null, walls: seps.length };
+}
+function grade(s){
+  if (s.acc == null) return null;
+  if (s.total >= 6 && s.acc >= 0.9) return 'strong';
+  if (s.acc >= 0.75) return 'fair';
+  return 'weak';
+}
+
+/* ---------- rendering ---------- */
+function diag(html){ $('#diag').innerHTML = html; }
+var statusIsError = false;
+function setStatus(t, isErr){ statusIsError = !!isErr; var el = $('#status'); el.textContent = t; el.classList.toggle('error', statusIsError); }
+function poseSvg(m){
+  var c = contactOf(m), e = exciteOf(m), s = '<svg viewBox="0 0 150 110" aria-hidden="true">';
+  s += '<rect x="0" y="0" width="28" height="110" style="fill:var(--wall)"/>';
+  for (var y = -20; y < 120; y += 12) s += '<line x1="0" y1="' + (y + 20) + '" x2="28" y2="' + y + '" style="stroke:var(--muted)" stroke-opacity=".35" stroke-width="1"/>';
+  var gap = e === 'tap' ? 8 : 0;
+  if (c === 'back') {
+    s += '<rect x="' + (28 + gap) + '" y="12" width="13" height="86" rx="3" style="fill:var(--ink)"/>';
+    s += '<text x="' + (48 + gap) + '" y="58" style="fill:var(--muted)" font-size="10">screen faces you</text>';
+  } else {
+    s += '<rect x="' + (28 + gap) + '" y="49" width="112" height="13" rx="3" style="fill:var(--ink)"/>';
+    if (c === 'bottom') for (var i = 0; i < 3; i++) s += '<circle cx="' + (33 + gap) + '" cy="' + (52 + i * 3.5) + '" r="1" style="fill:var(--bg)"/>';
+    else s += '<rect x="' + (31 + gap) + '" y="53" width="2" height="5" rx="1" style="fill:var(--bg)"/>';
+    s += '<text x="' + (36 + gap) + '" y="80" style="fill:var(--muted)" font-size="10">' + (c === 'bottom' ? 'charging port end' : 'top end') + '</text>';
+  }
+  var cx = 28 + gap + (c === 'back' ? 7 : 40), cy = c === 'back' ? 12 : 49;
+  if (e === 'vibrate') s += '<path d="M' + (cx - 14) + ' ' + (cy - 6) + ' l4 -4 l4 4 l4 -4 l4 4 l4 -4 l4 4 l4 -4" fill="none" style="stroke:var(--chalk)" stroke-width="2"/>';
+  if (e === 'speaker') { var sx = c === 'back' ? 50 : 150; s += '<path d="M' + (c === 'back' ? 44 : 140) + ' ' + (c === 'back' ? 100 : 44) + ' q6 -6 0 -12 M' + (c === 'back' ? 50 : 146) + ' ' + (c === 'back' ? 104 : 48) + ' q9 -10 0 -20" fill="none" style="stroke:var(--chalk)" stroke-width="2"/>'; }
+  if (e === 'tap') s += '<path d="M30 ' + (c === 'back' ? 30 : 38) + ' l-0 0 M31 ' + (c === 'back' ? 22 : 30) + ' l5 5 M31 ' + (c === 'back' ? 84 : 72) + ' l5 -5" style="stroke:var(--chalk)" stroke-width="2" stroke-linecap="round"/>' +
+    '<text x="' + (c === 'back' ? 48 : 40) + '" y="' + (c === 'back' ? 74 : 30) + '" style="fill:var(--chalk)" font-size="10" font-weight="700">tap</text>';
+  return s + '</svg>';
+}
+function poseText(m){
+  var c = contactOf(m), e = exciteOf(m), t;
+  if (e === 'tap') {
+    t = c === 'back' ? 'Hold the phone an inch from the wall, screen facing you, then tap its back flat against the spot once.' :
+        c === 'bottom' ? 'Hold the phone straight out from the wall and tap its charging-port end against the spot once.' :
+        'Hold the phone straight out from the wall and tap its top end against the spot once.';
+    return t + ' Firm but gentle, like knocking with a knuckle.';
+  }
+  t = c === 'back' ? 'Press the back of the phone flat on the spot, screen facing you.' :
+      c === 'bottom' ? 'Hold the phone straight out from the wall with its charging-port end pressed on the spot.' :
+      'Hold the phone straight out from the wall with its top end pressed on the spot.';
+  return t + (e === 'vibrate' ? ' It buzzes for about a second.' : ' It plays a short hiss.');
+}
+function renderGrid(){
+  var g = $('#mgrid'), h = '';
+  CONTACTS.forEach(function(c){
+    h += '<span class="rowlabel">' + c[1] + '</span>';
+    EXCITES.forEach(function(e){
+      var id = c[0] + '|' + e[0], on = S.settings.methods.indexOf(id) >= 0;
+      h += '<button type="button" class="chip" data-m="' + id + '" aria-pressed="' + on + '" aria-label="' + c[1] + ' with ' + e[1] + '"' + (busy || running ? ' disabled' : '') + '>' + e[1] + '</button>';
+    });
+  });
+  g.innerHTML = h;
+}
+function syncFields(){
+  [['reps', S.settings.reps], ['handsFree', S.settings.handsFree], ['moveSec', S.settings.moveSec], ['voice', S.settings.voice]].forEach(function(p){
+    document.querySelectorAll('input[name="' + p[0] + '"]').forEach(function(inp){ inp.checked = inp.value === String(p[1]); inp.disabled = busy || running; });
+  });
+  $('#hfFields').classList.toggle('hidden', S.settings.handsFree !== 'on');
+}
+function render(){
+  renderGrid(); syncFields();
+  $('#micBtn').classList.toggle('hidden', micOn);
+  $('#run').classList.toggle('hidden', !micOn);
+  if (micOn) {
+    var parts = [];
+    if (stream) {
+      var st = stream.getAudioTracks()[0] && stream.getAudioTracks()[0].getSettings ? stream.getAudioTracks()[0].getSettings() : {};
+      var bad = st.echoCancellation === true || st.noiseSuppression === true || st.autoGainControl === true;
+      parts.push('Microphone on' + (bad ? ', <span class="warn">but the browser kept some voice processing on</span>' : '') + '.');
+    }
+    parts.push('Vibration ' + ('vibrate' in navigator ? 'available' : '<span class="warn">not available</span>') + '. Motion sensor ' + (motionSeen ? 'working' : 'waiting for data') + '.');
+    diag(parts.join(' '));
+  }
+  var step = nextStep(), sel = selected();
+  var act = $('#actBtn');
+  if (!sel.length) {
+    $('#meta').textContent = 'Wall ' + S.wall; $('#methodName').textContent = 'Pick at least one method in Setup';
+    $('#poseSvg').innerHTML = ''; $('#poseText').textContent = ''; $('#target').classList.add('hidden'); $('#dots').innerHTML = '';
+    act.disabled = true;
+  } else if (!step) {
+    $('#meta').textContent = 'Wall ' + S.wall; $('#methodName').textContent = 'All methods done on this wall';
+    $('#poseSvg').innerHTML = ''; $('#poseText').textContent = 'Tap Next wall to repeat the test on another wall with a new stud spot and hollow spot.';
+    $('#target').classList.add('hidden'); $('#dots').innerHTML = '';
+    act.disabled = true; act.textContent = 'Done'; act.classList.remove('stop');
+  } else {
+    $('#target').classList.remove('hidden');
+    $('#meta').textContent = 'Wall ' + S.wall + ', method ' + (step.index + 1) + ' of ' + step.count;
+    $('#methodName').textContent = nameOf(step.method);
+    $('#poseSvg').innerHTML = poseSvg(step.method);
+    $('#poseText').textContent = poseText(step.method);
+    var tg = $('#target'); tg.className = 'target ' + step.label;
+    $('#targetText').textContent = step.label === 'S' ? 'Stud spot' : 'Hollow spot';
+    $('#targetSub').textContent = (step.label === 'S' ? step.ns : step.nh) + 1 + ' of ' + S.settings.reps;
+    var dots = '', r = S.settings.reps;
+    for (var i = 0; i < r; i++) {
+      dots += '<span class="dot S' + (i < step.ns ? ' done' : (i === step.ns && step.label === 'S' ? ' next' : '')) + '"></span>';
+      dots += '<span class="dot H' + (i < step.nh ? ' done' : (i === step.nh && step.label === 'H' ? ' next' : '')) + '"></span>';
+    }
+    $('#dots').innerHTML = dots;
+    if (S.settings.handsFree === 'on') { act.textContent = running ? 'Stop' : 'Start hands-free'; act.classList.toggle('stop', running); act.disabled = !micOn || (busy && !running); }
+    else { act.textContent = busy ? 'Measuring…' : (exciteOf(step.method) === 'tap' ? 'Listen for tap' : 'Measure'); act.classList.remove('stop'); act.disabled = !micOn || busy; }
+    if (!busy && !running && !$('#status').textContent) setStatus('Hold the phone as shown on the ' + spot(step.label) + ' spot, then tap ' + (S.settings.handsFree === 'on' ? 'Start hands-free.' : (exciteOf(step.method) === 'tap' ? 'Listen for tap.' : 'Measure.')));
+  }
+  var wallHas = S.readings.some(function(x){ return x.wall === S.wall; });
+  $('#redoBtn').disabled = busy || running || !wallHas;
+  $('#skipBtn').disabled = busy || running || !step;
+  $('#wallBtn').disabled = busy || running || !wallHas;
+  $('#clearBtn').disabled = busy || running || !S.readings.length;
+  $('#exportBtn').disabled = !S.readings.length;
+  renderBoard();
+}
+function renderBoard(){
+  var meths = ORDER.filter(function(m){ return S.settings.methods.indexOf(m) >= 0 || S.readings.some(function(r){ return r.method === m; }); });
+  var scores = meths.map(scoreMethod);
+  var ranked = scores.filter(function(s){ return s.total >= 6; }).sort(function(a, b){ return (b.acc - a.acc) || ((b.sep || 0) - (a.sep || 0)); });
+  var best = ranked[0];
+  var w = $('#winner');
+  if (!S.readings.length) w.textContent = 'No readings yet.';
+  else if (!best) w.textContent = 'Finish at least three stud and three hollow readings for a method to score it.';
+  else {
+    var g = grade(best);
+    w.innerHTML = 'Best so far: <b>' + nameOf(best.method) + '</b>, ' + best.correct + ' of ' + best.total + ' readings labeled correctly' +
+      (best.walls > 1 ? ' across ' + best.walls + ' walls.' : ' on one wall.') +
+      (g === 'strong' ? '' : g === 'fair' ? ' Promising, but not reliable enough for customers yet.' : ' Nothing is reliable yet.');
+  }
+  var h = '';
+  scores.sort(function(a, b){
+    if (a.acc == null && b.acc == null) return ORDER.indexOf(a.method) - ORDER.indexOf(b.method);
+    if (a.acc == null) return 1; if (b.acc == null) return -1;
+    return (b.acc - a.acc) || ((b.sep || 0) - (a.sep || 0));
+  }).forEach(function(s){
+    var g = grade(s), isBest = best && s.method === best.method && grade(best) !== 'weak';
+    h += '<div class="brow' + (isBest ? ' best' : '') + '"><div class="btop"><span class="bname">' + nameOf(s.method) + '</span>';
+    if (s.acc == null) h += '<span class="bstat muted">' + (s.n ? s.n + (s.n === 1 ? ' reading' : ' readings') + ', need more' : 'No readings yet') + '</span></div>';
+    else {
+      h += '<span class="bstat"><b>' + s.correct + '/' + s.total + '</b> correct' + (g ? '<span class="tag ' + g + '">' + (g === 'strong' ? 'Strong' : g === 'fair' ? 'Fair' : 'Weak') + '</span>' : '') + '</span></div>';
+      h += '<div class="bar ' + (g || '') + '"><span style="width:' + Math.round(s.acc * 100) + '%"></span><i></i></div>';
+      h += '<div class="bsub">Separation ' + (s.sep != null ? s.sep.toFixed(1) : 'n/a') + ', ' + s.walls + (s.walls === 1 ? ' wall' : ' walls') + '</div>';
+    }
+    h += '</div>';
+  });
+  $('#board').innerHTML = h;
+}
+
+/* ---------- export ---------- */
+function exportCsv(){
+  var head = ['wall', 'method', 'label', 'level_db', 'accel_db', 'decay_ms'].concat(BANDS.slice(0, -1).map(function(b, i){ return 'shape_' + b + '_' + BANDS[i + 1] + 'hz'; })).concat(['time']);
+  var rows = [head.join(',')];
+  S.readings.forEach(function(r){ rows.push([r.wall, r.method, r.label, r.level, r.accel == null ? '' : r.accel, r.decay == null ? '' : r.decay].concat(r.shape).concat([new Date(r.t).toISOString()]).join(',')); });
+  var blob = new Blob([rows.join('\n')], { type: 'text/csv' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'stud-method-test.csv'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+}
+
+/* ---------- events ---------- */
+$('#mgrid').addEventListener('click', function(e){
+  var b = e.target.closest('.chip'); if (!b || busy || running) return;
+  var m = b.getAttribute('data-m'), i = S.settings.methods.indexOf(m);
+  if (i >= 0) S.settings.methods.splice(i, 1); else S.settings.methods.push(m);
+  save(); setStatus(''); render();
+});
+document.addEventListener('change', function(e){
+  var t = e.target; if (!t || t.type !== 'radio') return;
+  if (t.name === 'reps' || t.name === 'moveSec') S.settings[t.name] = parseInt(t.value, 10);
+  else if (t.name === 'handsFree' || t.name === 'voice') S.settings[t.name] = t.value;
+  else return;
+  save(); setStatus(''); render();
+});
+$('#micBtn').addEventListener('click', enableMic);
+$('#actBtn').addEventListener('click', function(){ if (S.settings.handsFree === 'on') handsFree(); else manualMeasure(); });
+$('#redoBtn').addEventListener('click', function(){
+  var idx = -1; S.readings.forEach(function(r, i){ if (r.wall === S.wall && (idx < 0 || r.t >= S.readings[idx].t)) idx = i; });
+  if (idx < 0) return;
+  var r = S.readings.splice(idx, 1)[0]; save();
+  setStatus('Removed the last ' + spot(r.label) + ' reading for ' + nameOf(r.method) + '. Take it again.');
+  render();
+});
+$('#skipBtn').addEventListener('click', function(){
+  var step = nextStep(); if (!step) return;
+  S.skipped[S.wall + '|' + step.method] = true; save();
+  setStatus('Skipped ' + nameOf(step.method) + ' on this wall.'); render();
+});
+$('#wallBtn').addEventListener('click', function(){
+  S.wall += 1; save();
+  setStatus('Wall ' + S.wall + '. Mark a new stud spot and hollow spot, then start again.'); render();
+});
+$('#clearBtn').addEventListener('click', function(){
+  var b = $('#clearBtn');
+  if (!b.classList.contains('armed')) {
+    b.classList.add('armed'); b.textContent = 'Tap again to clear';
+    clearTimeout(clearTimer); clearTimer = setTimeout(function(){ b.classList.remove('armed'); b.textContent = 'Clear all'; }, 3000);
+    return;
+  }
+  clearTimeout(clearTimer); b.classList.remove('armed'); b.textContent = 'Clear all';
+  S.readings = []; S.skipped = {}; S.wall = 1; save(); setStatus('Cleared.'); render();
+});
+$('#exportBtn').addEventListener('click', exportCsv);
+
+load();
+render();
+})();
+</script>
+</body>
+</html>
